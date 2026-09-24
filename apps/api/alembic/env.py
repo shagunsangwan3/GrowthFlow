@@ -7,6 +7,7 @@ from app.database.session import Base, engine
 
 from app.models.user import User
 from app.models.organization import Organization
+from app.models.website import Website
 
 # Other models — enable them when they are ready
 # from app.models.lead import Lead
