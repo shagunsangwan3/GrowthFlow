@@ -1,27 +1,55 @@
 from sqlalchemy.orm import Session
+
 from app.models.user import User
+
 
 class UserRepository:
 
-    @staticmethod
-    def create_user(db: Session, user: User) -> User:
-        db.add(user)
-        db.commit()
-        db.refresh(user)
+    def __init__(self, db: Session):
+        self.db = db
+
+    def create_user(self, user: User):
+        self.db.add(user)
+        self.db.commit()
+        self.db.refresh(user)
         return user
 
-    @staticmethod
-    def get_user_by_email(db: Session, email:str) -> User | None:
+    def get_user_by_email(self, email: str):
         return (
-            db.query(User)
+            self.db.query(User)
             .filter(User.email == email)
             .first()
         )
 
-    @staticmethod
-    def get_user_by_id(db: Session, user_id: int) -> User | None:
+    def get_user_by_id(self, user_id: int):
         return (
-            db.query(User)
+            self.db.query(User)
             .filter(User.id == user_id)
             .first()
         )
+
+    def update_user(self, user_id: int, data: dict):
+        user = self.get_user_by_id(user_id)
+
+        if not user:
+            return None
+
+        for key, value in data.items():
+            if hasattr(user, key):
+                setattr(user, key, value)
+
+        self.db.commit()
+        self.db.refresh(user)
+
+        return user
+
+    def delete_user(self, user_id: int):
+        user = self.get_user_by_id(user_id)
+
+        if not user:
+            return False
+
+        self.db.delete(user)
+        self.db.commit()
+
+        return True

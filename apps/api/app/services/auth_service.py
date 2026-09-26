@@ -1,32 +1,34 @@
-from sqlalchemy.orm import Session
+from pwdlib import PasswordHash
 
 from app.models.user import User
 from app.repositories.user_repository import UserRepository
-from app.schemas.auth import UserRegistrationRequest
-from app.security.password import hash_password
+
+
+password_hash = PasswordHash.recommended()
 
 class AuthService:
 
-    @staticmethod
-    def register_user(
-        db: Session,
-        request: UserRegistrationRequest,
-        organization_id: int,
-    ) -> User:
+    def __init__(self, db):
+        self.user_repository = UserRepository(db)
 
-        existing_user = UserRepository.get_user_by_email(
-            db,
-            request.email,
+    def register_user(self, request):
+
+        # Check if email already exists
+        existing_user = self.user_repository.get_user_by_email(
+            request.email
         )
 
         if existing_user:
             raise ValueError("Email already registered")
 
+        # Hash password
+        hashed_password = password_hash.hash(request.password)
+
+        # Create user
         user = User(
             name=request.name,
             email=request.email,
-            password_hash=hash_password(request.password),
-            organization_id=organization_id,
+            password_hash=hashed_password,
         )
 
-        return UserRepository.create_user(db, user)
+        return self.user_repository.create_user(user)

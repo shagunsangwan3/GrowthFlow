@@ -10,8 +10,13 @@ router = APIRouter(
     tags=["Authentication"],
 )
 
-auth_service = AuthService()
+def get_db():
+    db = SessionLocal()
 
+    try:
+        yield db
+    finally:
+        db.close()
 
 @router.post("/register")
 async def register_user(
@@ -19,20 +24,21 @@ async def register_user(
     db: Session = Depends(get_db),
 ):
     try:
-        user = auth_service.register_user(
-            db=db,
-            request=request,
-            organization_id=1,
-        )
+        auth_service = AuthService(db)
+
+        user = auth_service.register_user(request)
 
         return {
             "message": "User registered successfully",
-            "user_id": user.id,
-            "email": user.email,
+            "user": {
+                "id": user.id,
+                "name": user.name,
+                "email": user.email,
+            },
         }
 
     except ValueError as e:
         raise HTTPException(
             status_code=400,
-            detail=str(e),
+            detail=str(e)
         )
